@@ -5,6 +5,7 @@ import concurrent.futures
 import socket, errno
 import ipaddress
 import binascii
+import readline
 import argparse
 import random
 import sys
