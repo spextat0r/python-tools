@@ -4,6 +4,7 @@ import socket, errno
 import dns.message
 import ipaddress
 import dns.query
+import readline
 import argparse
 import random
 import sys
