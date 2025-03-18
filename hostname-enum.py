@@ -6,6 +6,7 @@ import netifaces as ni
 import dns.message
 import dns.query
 import ipaddress
+import readline
 import argparse
 import sys, os
 import logging
