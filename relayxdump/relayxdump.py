@@ -7,6 +7,7 @@ except ImportError:
 import os, sys, json, subprocess
 from datetime import datetime
 import concurrent.futures
+import readline
 import argparse
 import time
 
