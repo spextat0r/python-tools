@@ -9,6 +9,7 @@ import string
 import random
 import socket
 import argparse
+import readline
 import subprocess
 import netifaces as ni
 
