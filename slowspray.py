@@ -6,6 +6,7 @@ from time import sleep
 import netifaces as ni
 import ipaddress
 import datetime
+import readline
 import argparse
 import logging
 import random
