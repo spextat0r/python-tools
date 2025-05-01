@@ -47,7 +47,8 @@ def do_ip(inpu, local_ip):  # check if the inputted ips are up so we dont scan t
 
 def sendit(username, password, domain, remoteName, remoteHost, hashes=None,aesKey=None, doKerberos=None, kdcHost=None, port=445):
     upasscombo = '{}:{}'.format(username, password)
-
+    if domain == 'localauth':
+        domain = remoteHost
     nthash = ''
     lmhash = ''
     if hashes is not None:
@@ -144,7 +145,7 @@ if __name__ == '__main__':
     if os.path.isfile('locked-slowspray'):
         os.system('sudo rm locked-slowspray')
     parser = argparse.ArgumentParser(add_help=True, description="Impacket made password sprayer for Windows AD")
-    parser.add_argument('-u', action='store', help='Username or path to file containing usernames 1 per line')
+    parser.add_argument('-u', action='store', required=True, help='Username or path to file containing usernames 1 per line')
     parser.add_argument('-p', action='store', help='Password to try or file of passwords')
     parser.add_argument('-uap', action='store_true',  default=False, help='Sets the username as the password')
     parser.add_argument('-d', action='store', help='FQDN to use')
@@ -161,6 +162,7 @@ if __name__ == '__main__':
     parser.add_argument('-ip', action='store', help='Your local ip or interface')
     parser.add_argument('-timeout', action='store', default=5, type=int, help='Timeout for each attempt (Default=5)')
     parser.add_argument('-l', action='store', default=5, type=int, help='Max amount of locked accounts before we stop(Default=5)')
+    parser.add_argument('-localauth', action='store_true', default=False, help='Use a local account for authentication')
 
     if len(sys.argv) == 1:
         parser.print_help()
@@ -184,8 +186,16 @@ if __name__ == '__main__':
     else:
         logging.getLogger().setLevel(logging.INFO)
 
+
+    if options.localauth:
+        options.d = "localauth"
+
     if options.d is None:
         print(red_minus + " Domain is required")
+        sys.exit(0)
+
+    if options.H is not None and options.p is not None:
+        print("You cannot use a hash and a password at the same time")
         sys.exit(0)
 
     if options.p is None and options.u != '' and options.H is None and options.uap == False:
@@ -197,21 +207,26 @@ if __name__ == '__main__':
         if options.H.find(':') == -1:
             options.H = ':' + options.H
 
-    if options.uap == False:
-        if os.path.isfile(options.p): # check if password is a file of passwords
-            with open(options.p, 'r') as f:
-                unclean_passwords = f.readlines()
-                f.close()
+    if options.H is None:
+        if options.uap == False and options.p is not None:
+            if os.path.isfile(options.p): # check if password is a file of passwords
+                with open(options.p, 'r') as f:
+                    unclean_passwords = f.readlines()
+                    f.close()
 
-            for item in unclean_passwords: # sanatize passwords
-                item = item.replace('\n', '')
-                item = item.replace('\r', '')
-                password_list.append(item)
+                for item in unclean_passwords: # sanatize passwords
+                    item = item.replace('\n', '')
+                    item = item.replace('\r', '')
+                    password_list.append(item)
+            else:
+                password_list.append(options.p)
         else:
-            password_list.append(options.p)
+            password_list.append('Username as Password')
 
     else:
-        password_list.append('Username as Password')
+        password_list.append(options.H)
+
+
 
     if len(password_list) < 1:
         print('Password list is empty')
@@ -272,15 +287,23 @@ if __name__ == '__main__':
         print('User list is empty')
         sys.exit(1)
 
+    print()
+
     if options.delay is not None: # so that the delay cannot exceed timeout
         options.timeout = options.timeout + options.delay
     count = 0
     doit = False
+    firstprint = True
     if options.method == 'sequence':
         with ProcessPool(max_workers=options.threads) as thread_exe:  # changed to pebble from concurrent futures because pebble supports timeout correctly
             for curr_ip in addresses:
                 for password in password_list:
-                    print('Trying password: {}'.format(password))
+                    if len(password_list) == 1:
+                        if firstprint:
+                            print('Trying password: {}'.format(password))
+                            if options.localauth:
+                                print("Using Local Authentication")
+                            firstprint = False
                     for username in users_cleaned:
                         if options.uap == True:
                             password = username
@@ -311,6 +334,8 @@ if __name__ == '__main__':
         with ProcessPool(max_workers=options.threads) as thread_exe:  # changed to pebble from concurrent futures because pebble supports timeout correctly
             for password in password_list:
                 print('Trying password: {}'.format(password))
+                if options.localauth:
+                    print("Using Local Authentication")
                 for username in users_cleaned:
                     curr_ip = addresses[random.randint(0, len(addresses)-1)]
                     if options.uap == True:
