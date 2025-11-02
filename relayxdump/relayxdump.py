@@ -129,6 +129,7 @@ if __name__ == '__main__':
     parser.add_argument('-ar', action='store_true', help='Auto-retry when enabled runs constantly until ctrl+c is hit')
     parser.add_argument('-A', action='store_true', help='Analyze mode: Will not do anything but print new admin relays')
     parser.add_argument('-cc', action='store', help='Custom command argument for -method custom: This is to run a user specified command Note this will run as sudo unless you add  "sudo -u username" to the beginning of your command')
+    parser.add_argument('--skip-config-check', action='store_true', help='Skip the config check')
 
     if len(sys.argv) == 1:
         parser.print_help()
@@ -168,8 +169,11 @@ if __name__ == '__main__':
     if not os.path.isdir("{}/loot".format(cwd)):
         os.makedirs("{}/loot".format(cwd))
 
-    if options.A == False:
+    if options.A == False and options.skip_config_check == False:
+        print("hi")
         config_check()
+    else:
+        print('{} Skipping Config Check'.format(blue_plus))
 
     attack_uname = ''
     if options.method == 'crackmapexec' or options.method == 'netexec':
