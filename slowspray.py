@@ -11,6 +11,7 @@ import argparse
 import logging
 import random
 import nmap
+import time
 import sys
 import os
 
@@ -19,6 +20,7 @@ color_RED = '\033[91m'
 color_GRE = '\033[92m'
 color_YELL = '\033[93m'
 color_reset = '\033[0m'
+color_BLU = '\033[94m'
 color_PURP = '\033[35m'
 green_plus = "{}[+]{}".format(color_GRE, color_reset)
 red_minus = "{}[-]{}".format(color_RED, color_reset)
@@ -26,6 +28,12 @@ gold_plus = "{}[+]{}".format(color_YELL, color_reset)
 purple_plus = "{}[+]{}".format(color_PURP, color_reset)
 password_list = []
 
+def timestamp():
+    today = datetime.datetime.now()
+    hour = today.strftime("%H")
+    ltime = time.localtime(time.time())
+    timestamp = '[%s-%s-%s %s:%s:%s %s]' % (str(ltime.tm_mon).zfill(2), str(ltime.tm_mday).zfill(2), str(ltime.tm_year).zfill(2), str(hour).zfill(2), str(ltime.tm_min).zfill(2), str(ltime.tm_sec).zfill(2), time.tzname[time.daylight])
+    return timestamp
 
 def do_ip(inpu, local_ip):  # check if the inputted ips are up so we dont scan thigns we dont need to
     print('\n[scanning hosts]')
@@ -78,10 +86,10 @@ def sendit(username, password, domain, remoteName, remoteHost, hashes=None,aesKe
                     f.write('Locked\n')
                     f.close()
             if options.s == False or str(e).find('STATUS_ACCOUNT_LOCKED_OUT') != -1 or str(e).find('STATUS_PASSWORD_MUST_CHANGE') != -1 or str(e).find('STATUS_LOGON_TYPE_NOT_GRANTED') != -1 or str(e).find('STATUS_ACCOUNT_DISABLED') != -1 or str(e).find('STATUS_ACCOUNT_EXPIRED') != -1 or str(e).find('STATUS_ACCOUNT_RESTRICTION') != -1 or str(e).find('STATUS_INVALID_LOGON_HOURS') != -1 or str(e).find('STATUS_PASSWORD_EXPIRED') != -1 or str(e).find('STATUS_ACCESS_DENIED') != -1:
-                print(purple_plus if str(e).find('STATUS_PASSWORD_MUST_CHANGE') != -1 or str(e).find('STATUS_LOGON_TYPE_NOT_GRANTED') != -1 or str(e).find('STATUS_ACCOUNT_DISABLED') != -1 or str(e).find('STATUS_ACCOUNT_EXPIRED') != -1 or str(e).find('STATUS_ACCOUNT_RESTRICTION') != -1 or str(e).find('STATUS_INVALID_LOGON_HOURS') != -1 or str(e).find('STATUS_PASSWORD_EXPIRED') != -1 or str(e).find('STATUS_ACCESS_DENIED') != -1 else red_minus, remoteName.ljust(20), upasscombo.ljust(30), str(e)[:str(e).find("(")])
+                print(timestamp(), purple_plus if str(e).find('STATUS_PASSWORD_MUST_CHANGE') != -1 or str(e).find('STATUS_LOGON_TYPE_NOT_GRANTED') != -1 or str(e).find('STATUS_ACCOUNT_DISABLED') != -1 or str(e).find('STATUS_ACCOUNT_EXPIRED') != -1 or str(e).find('STATUS_ACCOUNT_RESTRICTION') != -1 or str(e).find('STATUS_INVALID_LOGON_HOURS') != -1 or str(e).find('STATUS_PASSWORD_EXPIRED') != -1 or str(e).find('STATUS_ACCESS_DENIED') != -1 else red_minus, remoteName.ljust(20), upasscombo.ljust(30), str(e)[:str(e).find("(")])
             if options.o is not None:
                 with open(options.o, 'a') as f:
-                    f.write('{} {} {}\n'.format(remoteName.ljust(20), upasscombo.ljust(30), str(e)[:str(e).find("(")]))
+                    f.write('{} {} {} {}\n'.format(timestamp(), remoteName.ljust(20), upasscombo.ljust(30), str(e)[:str(e).find("(")]))
                     f.close()
 
         s = rpctransport.get_smb_connection()
@@ -90,19 +98,19 @@ def sendit(username, password, domain, remoteName, remoteHost, hashes=None,aesKe
         resp = scmr.hROpenSCManagerW(samr)
         scHandle = resp['lpScHandle']
 
-        print(gold_plus, remoteName.ljust(20), upasscombo.ljust(30), "Valid Admin Creds")
+        print(timestamp(), gold_plus, remoteName.ljust(20), upasscombo.ljust(30), "Valid Admin Creds")
         if options.o is not None:
              with open(options.o, 'a') as f:
-                 f.write('{} {} {}\n'.format(remoteName.ljust(20), upasscombo.ljust(30), "Valid Admin Creds"))
+                 f.write('{} {} {} {}\n'.format(timestamp(), remoteName.ljust(20), upasscombo.ljust(30), "Valid Admin Creds"))
                  f.close()
 
     except  (Exception, KeyboardInterrupt) as e:
 
         if str(e).find("rpc_s_access_denied") != -1 and str(e).find("STATUS_OBJECT_NAME_NOT_FOUND") == -1:
-            print(green_plus, remoteName.ljust(20), upasscombo.ljust(30), "Valid Creds")
+            print(timestamp(), green_plus, remoteName.ljust(20), upasscombo.ljust(30), "Valid Creds")
             if options.o is not None:
                 with open(options.o, 'a') as f:
-                    f.write('{} {} {}\n'.format(remoteName.ljust(20), upasscombo.ljust(30), "Valid Creds"))
+                    f.write('{} {} {} {}\n'.format(timestamp(), remoteName.ljust(20), upasscombo.ljust(30), "Valid Creds"))
                     f.close()
 
 def mt_execute(username, host_ip, passwd, doit):  # multithreading requires a function
@@ -114,7 +122,7 @@ def mt_execute(username, host_ip, passwd, doit):  # multithreading requires a fu
 
         if len(dat) > options.l:
             skip = True
-            print('{}[!]{} Stopping because account lockout threshold was hit'.format(color_RED, color_reset))
+            print('{} {}[!]{} Stopping because account lockout threshold was hit'.format(timestamp(), color_RED, color_reset))
             sys.exit(1)
     except:
         pass
