@@ -218,7 +218,7 @@ if __name__ == '__main__':
 
     options = parser.parse_args()
     printnlog('Tool is starting...', options.output)
-    print('Parsing Scope...')
+    printnlog('Parsing Scope...', options.output)
     data = parse_hosts_file(options.input) # parse scope file
 
     private = False
@@ -232,7 +232,7 @@ if __name__ == '__main__':
     if public and private:
         print('WARNING: Your scope contains both public and private IP addresses')
 
-    print('Total Hosts: {}'.format(len(data)))
+    printnlog('Total Hosts: {}'.format(len(data)), options.output)
 
 
     printnlog('Scanner client started...', options.output)
