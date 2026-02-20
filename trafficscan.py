@@ -10,6 +10,7 @@ import argparse
 import random
 import sys
 import os
+import re
 
 
 try:
@@ -81,6 +82,7 @@ def read_hosts(file_name):
         return ['']
 
 def output_xlsx(outfile):
+    ILLEGAL_CHARACTERS_RE = re.compile(r'[\000-\010]|[\013-\014]|[\016-\037]')
     # the code below adds an xlsx file because someone wanted it added
     # Read the host files for each protocol
     llmnr_hosts = read_hosts('llmnr.hosts')
@@ -101,7 +103,7 @@ def output_xlsx(outfile):
         'NetBIOS': netbios_hosts,
         'mDNS': mdns_hosts
     })
-
+    df = df.map(lambda x: ILLEGAL_CHARACTERS_RE.sub('', x) if isinstance(x, str) else x)
     # Save to an Excel file
     df.to_excel('{}.xlsx'.format(outfile), index=False)
 
