@@ -49,6 +49,11 @@ def do_ip(inpu, local_ip):  # check if the inputted ips are up so we dont scan t
     except:
         pass
 
+    try:
+        uphosts.remove('127.0.0.1')  # nmap package updated, and now it adds 127.0.0.1 even if it was not in the list we gave ¯\_(ツ)_/¯
+    except:
+        pass
+
     print('[scan complete]')
 
     return uphosts
