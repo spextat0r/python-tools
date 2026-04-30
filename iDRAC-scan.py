@@ -45,8 +45,10 @@ def CheckServer(ipaddr):
                 if len(jsondata["Attributes"]["FwVer"]) > 2:
                     dumpdata(ipaddr, jsondata["Attributes"]["FwVer"], jsondata["Attributes"]["BuildVersion"])
                     found = found + 1
+        else:
+            printnlog(f"{ipaddr}: Unable to fingerprint IDRAC", options.output)
     except Exception as e:
-        #print(e)
+        printnlog(f'{ipaddr}: Error: {e}', options.output)
         pass
 
 def worker():
