@@ -89,7 +89,7 @@ def dumpdata(hostip, version, buildver):
     elif int(version.split('.')[0]) >= 4: # >= 4= iDRAC 9
         idrac_major = '9'
     else:
-        idrac_major = f'??({buildver})'
+        idrac_major = '??'
 
 
     printnlog(hostip + " - iDRAC" + idrac_major + " " + version + "." + buildver, options.output)
