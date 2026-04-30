@@ -73,19 +73,23 @@ def WaitCompletion():
     printnlog("total found: " + str(found), options.output)
 
 def dumpdata(hostip, version, buildver):
-
     # determine idrac9 major version (probably correct)
     if version.split('.')[0] == '1': # 1.x = iDRAC 6
         idrac_major = '6'
     elif version.split('.')[0] == '2':
-        if version.split('.')[1] < '30': # 2.0-2.29 = iDRAC 7
+        if int(version.split('.')[1]) < 30: # 2.0-2.29 = iDRAC 7
             idrac_major = '7'
         else: # 2.30-3.99 = iDRAC8
             idrac_major = '8'
-    elif version.split('.')[0] >= '4': # >= 4= iDRAC 9
+    elif version.split('.')[0] == '3':
+        if int(version.split('.')[1]) < 30:
+            idrac_major = '8'
+        else:
+            idrac_major = '8/9'
+    elif int(version.split('.')[0]) >= 4: # >= 4= iDRAC 9
         idrac_major = '9'
     else:
-        idrac_major = '??'
+        idrac_major = f'??({buildver})'
 
 
     printnlog(hostip + " - iDRAC" + idrac_major + " " + version + "." + buildver, options.output)
