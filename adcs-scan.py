@@ -1,4 +1,7 @@
-# This tool abuses the responses that an ADCS server with web enrollment enabled gives to detect it.
+from impacket.dcerpc.v5 import transport, epm
+from impacket.dcerpc.v5.rpch import RPC_PROXY_INVALID_RPC_PORT_ERR, RPC_PROXY_CONN_A1_0X6BA_ERR, RPC_PROXY_CONN_A1_404_ERR, RPC_PROXY_RPC_OUT_DATA_404_ERR
+from impacket import uuid
+
 import concurrent.futures
 import ipaddress
 import requests
@@ -10,11 +13,13 @@ import time
 color_RED = '\033[91m'
 color_GRE = '\033[92m'
 color_YELL = '\033[93m'
+color_BLU = '\033[94m'
 color_reset = '\033[0m'
 gold_plus = '{}[+]{}'.format(color_YELL, color_reset)
 green_plus = '{}[+]{}'.format(color_GRE, color_reset)
+blue_plus = '{}[+]{}'.format(color_BLU, color_reset)
 
-# cidrs
+
 classA = ipaddress.IPv4Network(("10.0.0.0", "255.0.0.0"))
 classB = ipaddress.IPv4Network(("172.16.0.0", "255.240.0.0"))
 classC = ipaddress.IPv4Network(("192.168.0.0", "255.255.0.0"))
@@ -116,28 +121,125 @@ def parse_hosts_file(hosts_file):  # parse our host file
         hosts = list(set(hosts))  # unique the hosts
         return hosts
 
-def scan_for_adcs(ip_to_scan):
+def tof(indat):
+    if indat == 'Unsure':
+        indat = f'{color_YELL}Unsure{color_reset}'
+        return indat
+
+    if indat:
+        indat = f'{color_GRE}True{color_reset}'
+    else:
+        indat = f'{color_RED}False{color_reset}'
+        
+    return indat
+
+def clu(indat):
+    if indat == 'Certain':
+        indat = f'{color_GRE}Certain{color_reset}'
+    elif indat == 'Likely':
+        indat = f'{color_YELL}Likely{color_reset}'
+    else:
+        indat = f'{color_RED}Unknown{color_reset}'
+    return indat
+
+def scan_for_adcs(ip_to_scan, debug, timeout):
+    rpc_adcs = False
+    http_adcs = False
+    esc8 = False
+    rpc_confidence = 'Unknown'
+    http_confidence = 'Unknown'
+
+    # check rpc
+    KNOWN_PROTOCOLS = {
+        135: {"bindstr": r"ncacn_ip_tcp:%s[135]"},
+        139: {"bindstr": r"ncacn_np:%s[\pipe\epmapper]"},
+        443: {"bindstr": r"ncacn_http:[593,RpcProxy=%s:443]"},
+        445: {"bindstr": r"ncacn_np:%s[\pipe\epmapper]"},
+        593: {"bindstr": r"ncacn_http:%s"}
+    }
+
+    port = 135.
+    stringbinding = KNOWN_PROTOCOLS[port]["bindstr"] % ip_to_scan
+    rpctransport = transport.DCERPCTransportFactory(stringbinding)
+    rpctransport.setRemoteHost(ip_to_scan)
+    rpctransport.set_connect_timeout(float(timeout))
+
     try:
-        dat = requests.get(f'http://{ip_to_scan}/certsrv/', timeout=4) # make curl request
-        dat.close()
+        dce = rpctransport.get_dce_rpc()
+        dce.connect()
+        resp = epm.hept_lookup(None, dce=dce)
+        dce.disconnect()
+        entries = resp
+        for entry in entries:
+            tmpUUID = str(entry["tower"]["Floors"][0])
+
+            if uuid.uuidtup_to_bin(uuid.string_to_uuidtup(tmpUUID))[:18] in epm.KNOWN_UUIDS:
+                exename = epm.KNOWN_UUIDS[uuid.uuidtup_to_bin(uuid.string_to_uuidtup(tmpUUID))[:18]]
+
+                if exename == "certsrv.exe":
+                    rpc_adcs = True
+                    rpc_confidence = 'Certain'
+
     except Exception as e:
-        return 1
-    # if we get a 401 with the correct body string were on the right track
-    if dat.status_code == 401 and dat.content.decode().find("Access is denied due to invalid credentials.") != -1:
-        if 'WWW-Authenticate' in dat.headers: # if the headers have www-authenticate its almost certain
-            if dat.headers['WWW-Authenticate'] == 'NTLM' or dat.headers['WWW-Authenticate'] == 'Kerberos':
-                print(f'{gold_plus} ESC8 likely for: {ip_to_scan}')
-                return 2
-        else:
-            print(f'{green_plus} ADCS Web Enrollment likely for: {ip_to_scan}')
-            return 0
+        error_text = f"Protocol failed: {e}"
+        if debug:
+            print(error_text)
+
+            if RPC_PROXY_INVALID_RPC_PORT_ERR in error_text or \
+                    RPC_PROXY_RPC_OUT_DATA_404_ERR in error_text or \
+                    RPC_PROXY_CONN_A1_404_ERR in error_text or \
+                    RPC_PROXY_CONN_A1_0X6BA_ERR in error_text:
+                print("This usually means the target does not allow to connect to its epmapper using RpcProxy.")
+
+
+    # check http
+    try:
+        dat = requests.get(f'http://{ip_to_scan}/certsrv/certfnsh.asp', allow_redirects=False, timeout=int(timeout)) # make curl request
+        dat.close()
+        # if we get a 401 with the correct body string were on the right track if we get a 403 its still probs adcs but esc8 is unlikely
+        if (dat.status_code == 401 and dat.content.decode().find("Access is denied due to invalid credentials.") != -1) or (dat.status_code == 403 and dat.content.decode().find("You do not have permission to view this directory or page using the credentials that you supplied.") != -1):
+            http_adcs = True
+            http_confidence = 'Likely'
+            if 'WWW-Authenticate' in dat.headers:  # if the headers have www-authenticate its almost certain
+                if 'NTLM' in dat.headers['WWW-Authenticate'] or 'Kerberos' in dat.headers['WWW-Authenticate']:
+                    esc8 = True
+                    http_confidence = 'Certain'
+                elif 'Negotiate' in dat.headers['WWW-Authenticate']:
+                    esc8 = 'Unsure'
+            else:
+                dat = requests.get(f'http://{ip_to_scan}/ergrthiuerhuiergerfuheirg/', allow_redirects=False, timeout=int(timeout))  # make curl request
+                dat.close()
+                if (dat.status_code == 401 and dat.content.decode().find("Access is denied due to invalid credentials.") != -1) or (dat.status_code == 403 and dat.content.decode().find("You do not have permission to view this directory or page using the credentials that you supplied.") != -1):
+                    http_confidence = 'Unknown'
+
+    except Exception as e:
+        if debug:
+            print(f'Error: {e}')
+        pass
+
+    #build out string with pretty colors
+    if rpc_adcs or http_adcs:
+
+        rpc_adcs = tof(rpc_adcs)
+        rpc_confidence = clu(rpc_confidence)
+
+        http_adcs = tof(http_adcs)
+        http_confidence = clu(http_confidence)
+
+        esc8 = tof(esc8)
+
+        print_string = f'{blue_plus} CA:{ip_to_scan} RPC_Confirmation:{rpc_adcs} RPC_Confidence:{rpc_confidence} HTTP_Confirmation:{http_adcs} HTTP_Confidence:{http_confidence} ESC8:{esc8}'
+        print(print_string)
+
     return 1
 
-
+#TODO add rpc signing check for esc11 if possible
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Detect ADCS without credentials", formatter_class=argparse.RawTextHelpFormatter, epilog='Accepted IP formats\nSingle: 10.10.10.10\nCidr: 10.10.10.0/24\nSubnet: 10.10.10.0/255.255.255.0\nLine: 10.10.10.0-10.10.11.255')
     parser.add_argument("scope_file", help="Path to a file containing the full scope can be 1 ip per line or 1 cidr per line")
-    parser.add_argument("-t", default=20, help="Threads to use Default=20")
+    parser.add_argument("-t", action='store', type=int, default=20, help="Threads to use Default=20")
+    parser.add_argument("-timeout", action='store', default=5, help="Time to wait before timeout Default=5")
+    parser.add_argument("-debug", action='store_true', default=False, help="Turn on debugging")
 
     if len(sys.argv) == 1:
         parser.print_help()
@@ -153,7 +255,7 @@ if __name__ == '__main__':
         futures = []
         results = []
         for ip in scope:
-            futures.append(executor.submit(scan_for_adcs, ip))
+            futures.append(executor.submit(scan_for_adcs, ip, options.debug, options.timeout))
 
         count = 0
         last_printed = 0
@@ -176,12 +278,3 @@ if __name__ == '__main__':
 
                 print(f'{gold_plus} {percent}% Complete | ETA: {eta_str}')
                 last_printed = percent
-
-        if 2 in results:
-            print(f'{green_plus} Located {results.count(2)} instances of ADCS with ESC8')
-
-        if 0 in results:
-            print(f'{green_plus} Located {results.count(0)} instances of ADCS without ESC8')
-
-        if 2 not in results and 0 not in results:
-            print('Unable to locate ADCS')
