@@ -1,0 +1,11 @@
+netifaces
+impacket
+dnspython
+ibm-db
+passlib
+pebble
+python-nmap
+pandas
+openpyxl
+pywinrm
+urllib3
