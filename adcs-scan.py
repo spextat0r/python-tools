@@ -308,7 +308,6 @@ def scan_for_adcs(ip_to_scan, debug, timeout):
     return 1
 
 
-# TODO add rpc signing check for esc11 if possible
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Detect ADCS without credentials", formatter_class=argparse.RawTextHelpFormatter, epilog='Accepted IP formats\nSingle: 10.10.10.10\nCidr: 10.10.10.0/24\nSubnet: 10.10.10.0/255.255.255.0\nLine: 10.10.10.0-10.10.11.255\n\nPotential HTTP outputs\nHTTP_ means only an HTTP endpoint was found\nHTTPS_ means only an HTTPS endpoint was found\nHTTP(S)_ means both HTTP and HTTPS endpoints were found\nIf both endpoints are found and their confidences are different it will be formatted as http_confidence/https_confidence')
     parser.add_argument("scope_file", help="Path to a file containing the full scope can be 1 ip per line or 1 cidr per line")
