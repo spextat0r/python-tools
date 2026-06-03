@@ -1,6 +1,5 @@
 from impacket.dcerpc.v5 import transport, epm
-from impacket.dcerpc.v5.rpch import RPC_PROXY_INVALID_RPC_PORT_ERR, RPC_PROXY_CONN_A1_0X6BA_ERR, \
-    RPC_PROXY_CONN_A1_404_ERR, RPC_PROXY_RPC_OUT_DATA_404_ERR
+from impacket.dcerpc.v5.rpch import RPC_PROXY_INVALID_RPC_PORT_ERR, RPC_PROXY_CONN_A1_0X6BA_ERR, RPC_PROXY_CONN_A1_404_ERR, RPC_PROXY_RPC_OUT_DATA_404_ERR
 from impacket import uuid
 
 from urllib3.exceptions import InsecureRequestWarning
@@ -10,8 +9,6 @@ import requests
 import argparse
 import sys, os
 import time
-
-
 
 
 # colors
@@ -75,8 +72,7 @@ def convert_dashnot_to_ips(inp):  # takes string input
 
 def parse_hosts_file(hosts_file):  # parse our host file
     hosts = []
-    if os.path.isfile(
-            hosts_file):  # ensure the file exists otherwise try it as if they passed an ip or cidr to the command line
+    if os.path.isfile(hosts_file):  # ensure the file exists otherwise try it as if they passed an ip or cidr to the command line
         try:
             with open(hosts_file, 'r') as file:  # read the file
                 for line in file:
@@ -312,6 +308,7 @@ def scan_for_adcs(ip_to_scan, debug, timeout):
     return 1
 
 
+# TODO add rpc signing check for esc11 if possible
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Detect ADCS without credentials", formatter_class=argparse.RawTextHelpFormatter, epilog='Accepted IP formats\nSingle: 10.10.10.10\nCidr: 10.10.10.0/24\nSubnet: 10.10.10.0/255.255.255.0\nLine: 10.10.10.0-10.10.11.255\n\nPotential HTTP outputs\nHTTP_ means only an HTTP endpoint was found\nHTTPS_ means only an HTTPS endpoint was found\nHTTP(S)_ means both HTTP and HTTPS endpoints were found\nIf both endpoints are found and their confidences are different it will be formatted as http_confidence/https_confidence')
     parser.add_argument("scope_file", help="Path to a file containing the full scope can be 1 ip per line or 1 cidr per line")
