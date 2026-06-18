@@ -183,6 +183,9 @@ if __name__ == '__main__':
 
     options = parser.parse_args()
 
+    if options.o is None:
+        options.o = 'slowspraylog.log'
+
     if options.o is not None:
         with open(options.o, 'a') as f:
             f.write(datetime.datetime.now().strftime("%D %H:%M:%S") + '\n')
