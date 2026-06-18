@@ -163,7 +163,7 @@ if __name__ == '__main__':
     parser.add_argument('-uap', action='store_true',  default=False, help='Sets the username as the password')
     parser.add_argument('-d', action='store', help='FQDN to use')
     parser.add_argument('-H', action='store', help='Password hash to use LM:NT')
-    parser.add_argument('-o', action='store', help='Output file')
+    parser.add_argument('-o', action='store', help='Output file (Default=slowspraylog.log)')
     parser.add_argument('-s', action='store_true', default=False, help='Quiet mode will only print valid accounts')
     parser.add_argument('-m', action='store', default=1, type=int, help='Max amount of passwords to try before pausing Default=1')
     parser.add_argument('-pd', action='store', default=30, type=int, help='Duration to pause between the max amount of passwords (minutes) Default=30')
