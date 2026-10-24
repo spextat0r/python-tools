@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Super niche edge case I found when building slowspray that allows you to make a kerberos request through a domain joined Windows machine.
 # by authenticating to SMB in this way the Windows machine makes a Kerberos request on your behalf to the dc and will return not a STATUS_LOGON_FAILURE but a Kerberos KDC_ERR_PREAUTH_FAILED if the user exists.
 from __future__ import division
@@ -5,6 +6,7 @@ from __future__ import print_function
 import sys
 import os
 from pebble import ProcessPool
+import multiprocessing
 import argparse
 
 try:
@@ -51,6 +53,8 @@ def mt_execute(username):  # multithreading requires a function
 
 
 if __name__ == '__main__':
+    # Python 3.14 changed the default start method to forkserver. The workers need the globals from this block.
+    multiprocessing.set_start_method('fork')
     parser = argparse.ArgumentParser(add_help=True, description="")
     parser.add_argument('-u', action='store', help='Username or path to file containing usernames 1 per line')
     parser.add_argument('-d', action='store', help='FQDN to use')

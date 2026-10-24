@@ -1,5 +1,30 @@
 # python-tools
 
+## Install with pipx
+
+pipx installs all the tools and their dependencies in one isolated environment. Each script becomes a command with the same name, for example `slowspray.py`.
+
+Prerequisites:
+
+- `pipx`
+- A C compiler and the Python headers. The `netifaces` dependency has no prebuilt wheel for new Python versions, so pip compiles it. On Debian or Kali, run `sudo apt install build-essential python3-dev`.
+
+To install the tools, run this command:
+
+```bash
+pipx install git+https://github.com/spextat0r/python-tools.git
+```
+
+To install from a local clone, run `pipx install .` in the clone directory. To update the tools, run `pipx upgrade python-tools`.
+
+Some tools must run as root. The `sudo` command does not search `~/.local/bin`, so give `sudo` the full path of the command:
+
+```bash
+sudo "$(command -v slowspray.py)" -h
+```
+
+`secretsdumpplus.py`, `relayxdump.py`, and `smbserver.py` write their output to the directory that contains the script. After a pipx install, this directory is `python-tools/bin` in the pipx venvs directory. The `pipx list` command shows the venvs directory.
+
 ## slowspray.py
 
 slowspray is a Python tool using Impacket to password spray a Windows Domain with a delay to evade being blocked by defenses.

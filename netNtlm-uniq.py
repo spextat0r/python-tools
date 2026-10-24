@@ -1,7 +1,8 @@
+#!/usr/bin/env python3
 import argparse, sys
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(epilog="This can also be done using a one liner made by c@b0053\ncat hashfile | grep -v '\$' | sort -u -t ':' -k 1,2")
+    parser = argparse.ArgumentParser(epilog="This can also be done using a one liner made by c@b0053\ncat hashfile | grep -v '\\$' | sort -u -t ':' -k 1,2")
     parser.add_argument('file', action='store', type=str, help='The file to parse')
     parser.add_argument('-of', action='store', type=str, default='netNtlm-uniqout.txt', help='File to output to. Default=./netNtlm-uniqout.txt')
 

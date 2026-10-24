@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from impacket.dcerpc.v5 import transport, epm
 from impacket.dcerpc.v5.rpch import RPC_PROXY_INVALID_RPC_PORT_ERR, RPC_PROXY_CONN_A1_0X6BA_ERR, RPC_PROXY_CONN_A1_404_ERR, RPC_PROXY_RPC_OUT_DATA_404_ERR
 from impacket import uuid

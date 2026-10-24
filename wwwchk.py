@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from urllib3.exceptions import InsecureRequestWarning
 from concurrent.futures import ThreadPoolExecutor
 from requests import ConnectionError

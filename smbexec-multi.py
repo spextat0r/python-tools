@@ -66,6 +66,7 @@ from impacket.krb5.keytab import Keytab
 import nmap
 import netifaces as ni
 from pebble import ProcessPool
+import multiprocessing
 
 ###################COLORS#################
 color_RED = '\033[91m'
@@ -301,6 +302,8 @@ def mt_execute(ip):  # multithreading requires a function
 
 # Process command-line arguments.
 if __name__ == '__main__':
+    # Python 3.14 changed the default start method to forkserver. The workers need the globals from this block.
+    multiprocessing.set_start_method('fork')
     print(version.BANNER)
 
     print('WARNING: The multiple command at once feature is extremely basic and has no error checking besides preventing overwriting of a mounted network drive')

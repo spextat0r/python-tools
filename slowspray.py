@@ -1,5 +1,7 @@
+#!/usr/bin/env python3
 from impacket.dcerpc.v5 import transport, scmr
 from pebble import ProcessPool
+import multiprocessing
 from impacket import version
 from time import sleep
 
@@ -154,6 +156,8 @@ def mt_execute(username, host_ip, passwd, doit):  # multithreading requires a fu
 
 
 if __name__ == '__main__':
+    # Python 3.14 changed the default start method to forkserver. The workers need the globals from this block.
+    multiprocessing.set_start_method('fork')
     print(datetime.datetime.now().strftime("%D %H:%M:%S"))
     if os.path.isfile('locked-slowspray'):
         os.system('sudo rm locked-slowspray')

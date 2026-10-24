@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Impacket - Collection of Python classes for working with network protocols.
 #
 # Copyright Fortra, LLC and its affiliated companies

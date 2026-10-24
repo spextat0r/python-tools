@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import concurrent.futures
 import netifaces as ni
 import socket, errno

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # this tool attempts to get a hostname from an IP using several methods that work for most hosts in a Windows environment.
 
 from impacket.smbconnection import SMBConnection

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # this tool will dump all admin relays lsa secrets and sam
 try:
     from urllib.request import ProxyHandler, build_opener, Request

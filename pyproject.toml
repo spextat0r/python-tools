@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "python-tools"
+version = "0.1.0"
+description = "Python tools for penetration testing"
+readme = "README.md"
+license = { file = "LICENSE" }
+dependencies = [
+    "netifaces",
+    "impacket",
+    "dnspython",
+    "ibm-db",
+    "passlib",
+    "pebble",
+    "python-nmap",
+    "pandas",
+    "openpyxl",
+    "pywinrm",
+    "urllib3",
+    "codext",
+]
+
+[tool.setuptools]
+# The tools are stand-alone scripts. Install them as commands, not as importable modules.
+py-modules = []
+packages = []
+script-files = [
+    "adcs-scan.py",
+    "decode.py",
+    "difforsame.py",
+    "gen-userlist/gen-userlist.py",
+    "hostname-enum.py",
+    "iDRAC-scan.py",
+    "ibm_db2-connect.py",
+    "llmnr-scanner.py",
+    "netNtlm-uniq.py",
+    "newline-to-space.py",
+    "passwd2ntlm.py",
+    "relayxdump/relayxdump.py",
+    "secretsdumpplus.py",
+    "slowspray.py",
+    "smbclient.py",
+    "smbexec-modified.py",
+    "smbexec-multi.py",
+    "smbexec-shellless.py",
+    "smbserver.py",
+    "trafficscan.py",
+    "userenum.py",
+    "vmware-scan.py",
+    "winrmexec.py",
+    "wwwchk.py",
+]

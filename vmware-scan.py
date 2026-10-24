@@ -1,4 +1,4 @@
-#!pyhton3
+#!/usr/bin/env python3
 # VMware Scanner v2.02 - March 2017
 # Written by the.anykey@gmail.com Modified by spextat0r
 #

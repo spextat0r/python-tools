@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Userlist generator that uses SecLists
 
 import argparse
