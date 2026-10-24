@@ -1,10 +1,11 @@
+import argparse
+import sys
+
 try:
   from ibm_db import connect
-except:
+except ImportError:
   print("Error: you dont have ibm_db installed you can install it with python3 -m pip install ibm_db")
-
-  import argparse
-import sys
+  sys.exit(1)
 
 parser = argparse.ArgumentParser(add_help=True, description="")
 parser.add_argument('-dbname', action='store', required=True, help='Name of the database to try SUPER IMPORTANT PUT THIS IN SINGLE QUOTES')
